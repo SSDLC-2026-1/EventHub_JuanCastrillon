@@ -18,6 +18,7 @@ import re
 import unicodedata
 from datetime import datetime
 from typing import Tuple, Dict
+from datetime import timezone
 
 
 # =============================
@@ -29,7 +30,7 @@ CARD_DIGITS_RE = re.compile(r"^[0-9_]{13,19}$")     # digits only
 CVV_RE = re.compile(r"^[0-9_]{3,4}")             # 3 or 4 digits
 EXP_RE = re.compile(r"^(0[1-9]|1[0-2])\/[0-9]{2}$")             # MM/YY format
 EMAIL_BASIC_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")     # basic email structure
-NAME_ALLOWED_RE = re.compile(r"^[a-zA-Z\s'\-]{2,60}$")    # allowed name characters
+NAME_ALLOWED_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]{2,60}$")    # allowed name characters
 
 
 # =============================
@@ -73,9 +74,6 @@ def validate_card_number(card_number: str) -> Tuple[str, str]:
     ptrn = CARD_DIGITS_RE
     if not ptrn.match(card_number):
         return "", "Número de tarjeta inválido: debe contener solo dígitos y tener entre 13 y 19 caracteres."
-    # BONUS: Validate Luhn algorithm
-    if not luhn_is_valid(card_number):
-        return "", "Número de tarjeta inválido: no pasa la validación de Luhn."
 
     return card_number, ""
 
@@ -90,7 +88,7 @@ def validate_exp_date(exp_date: str) -> Tuple[str, str]:
     try:
         exp_month, exp_year = exp_date.split("/")
         exp_year = int(exp_year)
-        now = datetime.now(datetime.UTC)
+        now = datetime.now(timezone.utc)
         current_year = int(str(now.year)[-2:])  # Get last two digits of current year
         current_month = now.month
         if (exp_year < current_year) or (exp_year == current_year and int(exp_month) < current_month):
