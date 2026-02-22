@@ -10,6 +10,13 @@ import json
 
 from validation import validate_payment_form
 
+import time
+
+MAX_ATTEMPTS = 2
+LOCK_TIME = 1 * 60
+
+login_state = {}
+
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.secret_key = "dev-secret-change-me"
@@ -22,6 +29,24 @@ ORDERS_PATH = BASE_DIR / "data" / "orders.json"
 CATEGORIES = ["All", "Music", "Tech", "Sports", "Business"]
 CITIES = ["Any", "New York", "San Francisco", "Berlin", "London", "Oakland", "San Jose"]
 
+# BLOCK SESSION 
+def is_account_locked(email: str) -> bool:
+    state = login_state.get(email, {"attempts": 0, "locked_until": 0})
+    return state["locked_until"] > time.time()
+
+
+def register_failed_attempt(email: str) -> None:
+    state = login_state.get(email, {"attempts": 0, "locked_until": 0})
+    state["attempts"] += 1
+
+    if state["attempts"] >= MAX_ATTEMPTS:
+        state["locked_until"] = time.time() + LOCK_TIME
+
+    login_state[email] = state
+
+
+def reset_login_state(email: str) -> None:
+    login_state[email] = {"attempts": 0, "locked_until": 0}
 
 @dataclass(frozen=True)
 class Event:
@@ -258,17 +283,26 @@ def login():
             field_errors=field_errors,
             form={"email": email},
         ), 400
-
-    user = find_user_by_email(email)
+    email_norm = email.strip().lower()
+    # validar bloqueo por intentos fallidos
+    if is_account_locked(email_norm):
+        return render_template(
+            "login.html",
+            error="Account temporarily locked. Try again later.",
+            form={"email": email},
+        ), 403
+     
+    user = find_user_by_email(email_norm)
     if not user or user.get("password") != password:
+        register_failed_attempt(email_norm)
         return render_template(
             "login.html",
             error="Invalid credentials.",
             field_errors={"email": " ", "password": " "},
             form={"email": email},
         ), 401
-
-    session["user_email"] = (user.get("email") or "").strip().lower()
+    reset_login_state(email_norm)
+    session["user_email"] = email_norm
 
     return redirect(url_for("dashboard"))
 
