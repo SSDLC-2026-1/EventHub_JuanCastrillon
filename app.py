@@ -13,7 +13,7 @@ from validation import validate_payment_form
 import time
 
 MAX_ATTEMPTS = 2
-LOCK_TIME = 1 * 60
+LOCK_TIME = 5 * 60 #Bloqueo de 5 minutos
 
 login_state = {}
 
