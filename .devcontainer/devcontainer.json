@@ -1,0 +1,19 @@
+{
+  "name": "EventHub Flask DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+
+  "forwardPorts": [5000],
+
+  "postCreateCommand": "pip install --upgrade pip && pip install flask && if [ -f requirements.txt ]; then pip install -r requirements.txt; fi",
+
+  "remoteEnv": {
+    "FLASK_APP": "app.py",
+    "FLASK_ENV": "development"
+  }
+}
