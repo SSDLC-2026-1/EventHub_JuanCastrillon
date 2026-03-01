@@ -12,6 +12,8 @@ from validation import validate_payment_form
 
 import time
 
+from encryption import hash_password, verify_password
+
 MAX_ATTEMPTS = 2
 LOCK_TIME = 5 * 60 #Bloqueo de 5 minutos
 
@@ -293,7 +295,8 @@ def login():
         ), 403
      
     user = find_user_by_email(email_norm)
-    if not user or user.get("password") != password:
+
+    if not user or not verify_password(password, user.get("password")):
         register_failed_attempt(email_norm)
         return render_template(
             "login.html",
@@ -326,12 +329,13 @@ def register():
     users = load_users()
     next_id = (max([u.get("id", 0) for u in users], default=0) + 1)
 
+    password_data = hash_password(password)
     users.append({
         "id": next_id,
         "full_name": full_name,
         "email": email,
         "phone": phone,
-        "password": password,
+        "password": password_data,
         "role": "user",          
         "status": "active",
     })
