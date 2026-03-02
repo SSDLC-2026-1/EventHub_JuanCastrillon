@@ -393,20 +393,24 @@ def checkout(event_id: int):
         billing_email=billing_email
     )
 
-    form_data = {
-        "exp_date": clean.get("exp_date", ""),
-        "name_on_card": clean.get("name_on_card", ""),
-        "billing_email": clean.get("billing_email", ""),
-        "card": clean.get("card", "")
-    }
-
     if errors:
         return render_template(
             "checkout.html",
             event=event, qty=qty, subtotal=subtotal,
             service_fee=service_fee, total=total,
-            errors=errors, form_data=form_data
+            errors=errors, form_data=clean
         ), 400
+
+    card_clean = clean.get("card", "")
+    last4 = card_clean[-4:] if len(card_clean) >= 4 else ""
+    masked_card = f"**** **** **** {last4}"
+
+    form_data = {
+    "exp_date": clean.get("exp_date", ""),
+    "name_on_card": clean.get("name_on_card", ""),
+    "billing_email": clean.get("billing_email", ""),
+    "card": masked_card   
+    }
 
     orders = load_orders()
     order_id = next_order_id(orders)
