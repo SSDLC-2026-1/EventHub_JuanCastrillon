@@ -3,12 +3,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Dict
+from functools import wraps
 
 from flask import Flask, render_template, request, abort, url_for, redirect, session
 from pathlib import Path
 import json
 
 from validation import validate_name,validate_email,validate_mobile_number,validate_password
+
+import time
+
+MAX_ATTEMPTS = 2
+LOCK_TIME = 5 * 60 #Bloqueo de 5 minutos
+
+login_state = {}
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -22,6 +30,24 @@ ORDERS_PATH = BASE_DIR / "data" / "orders.json"
 CATEGORIES = ["All", "Music", "Tech", "Sports", "Business"]
 CITIES = ["Any", "New York", "San Francisco", "Berlin", "London", "Oakland", "San Jose"]
 
+# BLOCK SESSION 
+def is_account_locked(email: str) -> bool:
+    state = login_state.get(email, {"attempts": 0, "locked_until": 0})
+    return state["locked_until"] > time.time()
+
+
+def register_failed_attempt(email: str) -> None:
+    state = login_state.get(email, {"attempts": 0, "locked_until": 0})
+    state["attempts"] += 1
+
+    if state["attempts"] >= MAX_ATTEMPTS:
+        state["locked_until"] = time.time() + LOCK_TIME
+
+    login_state[email] = state
+
+
+def reset_login_state(email: str) -> None:
+    login_state[email] = {"attempts": 0, "locked_until": 0}
 
 @dataclass(frozen=True)
 class Event:
@@ -50,6 +76,13 @@ def get_current_user() -> Optional[dict]:
         return None
     return find_user_by_email(email)
 
+def require_login(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_email" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def load_events() -> List[Event]:
@@ -281,17 +314,26 @@ def login():
             field_errors=field_errors,
             form={"email": email},
         ), 400
-
-    user = find_user_by_email(email)
+    email_norm = email.strip().lower()
+    # validar bloqueo por intentos fallidos
+    if is_account_locked(email_norm):
+        return render_template(
+            "login.html",
+            error="Account temporarily locked. Try again later.",
+            form={"email": email},
+        ), 403
+     
+    user = find_user_by_email(email_norm)
     if not user or user.get("password") != password:
+        register_failed_attempt(email_norm)
         return render_template(
             "login.html",
             error="Invalid credentials.",
             field_errors={"email": " ", "password": " "},
             form={"email": email},
         ), 401
-
-    session["user_email"] = (user.get("email") or "").strip().lower()
+    reset_login_state(email_norm)
+    session["user_email"] = email_norm
 
     return redirect(url_for("dashboard"))
 
@@ -380,6 +422,7 @@ def register():
     return redirect(url_for("login", registered="1"))
 
 @app.get("/dashboard")
+@require_login
 def dashboard():
 
 
@@ -388,6 +431,7 @@ def dashboard():
     return render_template("dashboard.html", user_name=(user.get("full_name") if user else "User"), paid=paid)
 
 @app.route("/checkout/<int:event_id>", methods=["GET", "POST"])
+@require_login
 def checkout(event_id: int):
 
 
@@ -467,6 +511,7 @@ def checkout(event_id: int):
 
 
 @app.route("/profile", methods=["GET", "POST"])
+@require_login
 def profile():
  
 
@@ -555,6 +600,10 @@ def profile():
     )
 @app.get("/admin/users")
 def admin_users():
+
+    user = get_current_user()
+    if not user or user.get("role") != "admin":
+        abort(403)
 
     q = (request.args.get("q") or "").strip().lower()
     role = (request.args.get("role") or "all").strip().lower()
