@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from encryption import encrypt_aes
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Dict
@@ -10,6 +11,8 @@ from pathlib import Path
 import json
 
 from validation import validate_payment_form
+
+LLAVE_GLOBAL = b'SixteenByteKey!!' 
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -297,6 +300,14 @@ def register():
             error="This email is already registered. Try signing in."
         ), 400
 
+    t_cifrado, t_nonce, t_tag = encrypt_aes(phone, LLAVE_GLOBAL)
+    
+    phone_data = {
+        "encrypted_data": t_cifrado,
+        "nonce": t_nonce,
+        "tag": t_tag
+    }
+
     users = load_users()
     next_id = (max([u.get("id", 0) for u in users], default=0) + 1)
 
@@ -304,8 +315,8 @@ def register():
         "id": next_id,
         "full_name": full_name,
         "email": email,
-        "phone": phone,
-        "password": password,
+        "phone": phone_data, 
+        "password": password, 
         "role": "user",          
         "status": "active",
     })
@@ -326,8 +337,6 @@ def dashboard():
 @app.route("/checkout/<int:event_id>", methods=["GET", "POST"])
 @require_login
 def checkout(event_id: int):
-
-
     events = load_events()
     event = next((e for e in events if e.id == event_id), None)
     if not event:
@@ -365,11 +374,18 @@ def checkout(event_id: int):
         billing_email=billing_email
     )
 
+    e_cifrado, e_nonce, e_tag = encrypt_aes(billing_email, LLAVE_GLOBAL)
+    email_data_cifrada = {
+        "encrypted_data": e_cifrado,
+        "nonce": e_nonce,
+        "tag": e_tag
+    }
+
     form_data = {
         "exp_date": clean.get("exp_date", ""),
         "name_on_card": clean.get("name_on_card", ""),
-        "billing_email": clean.get("billing_email", ""),
-        "card": clean.get("card", "")
+        "billing_email": email_data_cifrada, 
+        "card": clean.get("card", "")        
     }
 
     if errors:
@@ -385,7 +401,7 @@ def checkout(event_id: int):
 
     orders.append({
         "id": order_id,
-        "user_email": "PLACEHOLDER@EMAIL.COM",
+        "user_email": session.get("user_email", "guest"),
         "event_id": event.id,
         "event_title": event.title,
         "qty": qty,
@@ -394,14 +410,12 @@ def checkout(event_id: int):
         "total": total,
         "status": "PAID",
         "created_at": datetime.utcnow().isoformat(),
-        "payment": form_data
+        "payment": form_data 
     })
 
     save_orders(orders)
 
     return redirect(url_for("dashboard", paid="1"))
-
-
 
 @app.route("/profile", methods=["GET", "POST"])
 @require_login
