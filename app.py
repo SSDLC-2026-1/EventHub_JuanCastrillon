@@ -493,15 +493,23 @@ def checkout(event_id: int):
             service_fee=service_fee, total=total,
             errors=errors, form_data=clean
         ), 400
+
+    e_cifrado, e_nonce, e_tag = encrypt_aes(billing_email, LLAVE_GLOBAL)
+    email_data_cifrada = {
+        "encrypted_data": e_cifrado,
+        "nonce": e_nonce,
+        "tag": e_tag
+    }
+
     card_clean = clean.get("card", "")
     last4 = card_clean[-4:] if len(card_clean) >= 4 else ""
     masked_card = f"**** **** **** {last4}"
 
     form_data = {
-    "exp_date": clean.get("exp_date", ""),
-    "name_on_card": clean.get("name_on_card", ""),
-    "billing_email": clean.get("billing_email", ""),
-    "card": masked_card   
+        "exp_date": clean.get("exp_date", ""),
+        "name_on_card": clean.get("name_on_card", ""),
+        "billing_email": email_data_cifrada, 
+        "card": masked_card   
     }
     
     orders = load_orders()
