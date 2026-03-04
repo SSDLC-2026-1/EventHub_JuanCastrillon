@@ -35,5 +35,23 @@
       "billing_email": "ohn.doe@example.com",
       "card": ""
     }
+  },
+  {
+    "id": 3,
+    "user_email": "kevin.cruz@prueba.com",
+    "event_id": 9,
+    "event_title": "Champions League Final Viewing",
+    "qty": 1,
+    "unit_price": 65.0,
+    "service_fee": 5.0,
+    "total": 70.0,
+    "status": "PAID",
+    "created_at": "2026-03-04T03:22:21.319791+00:00",
+    "payment": {
+      "exp_date": "05/29",
+      "name_on_card": "Kevin Prueba",
+      "billing_email": "kevin.cruz@prueba.com",
+      "card": "**** **** **** 1234"
+    }
   }
 ]

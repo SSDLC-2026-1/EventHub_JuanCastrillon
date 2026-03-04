@@ -10,7 +10,7 @@ from flask import Flask, render_template, request, abort, url_for, redirect, ses
 from pathlib import Path
 import json
 
-from validation import validate_name,validate_email,validate_mobile_number,validate_password
+from validation import validate_name,validate_email,validate_mobile_number,validate_password,validate_payment_form
 
 import time
 
