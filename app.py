@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict
 from functools import wraps
 
@@ -335,6 +335,8 @@ def login():
     reset_login_state(email_norm)
     session["user_email"] = email_norm
 
+    session["login_time"] = datetime.now(timezone.utc).timestamp()
+
     return redirect(url_for("dashboard"))
 
 @app.route("/register", methods=["GET", "POST"])
@@ -487,8 +489,13 @@ def checkout(event_id: int):
             errors=errors, form_data=form_data
         ), 400
 
+    
+    clean.get("card"," ")
     orders = load_orders()
     order_id = next_order_id(orders)
+
+    masked_card = "**** **** **** " + clean.get("card", "")[-4:] # Ultimos 4 numeros
+    clean = {} # Limpiar datos sensibles de la tarjeta
 
     orders.append({
         "id": order_id,
@@ -500,8 +507,8 @@ def checkout(event_id: int):
         "service_fee": service_fee,
         "total": total,
         "status": "PAID",
-        "created_at": datetime.utcnow().isoformat(),
-        "payment": form_data
+        "created_at": datetime.now(timezone.utc).timestamp().isoformat(),
+        "card_last_four": masked_card
     })
 
     save_orders(orders)
@@ -671,6 +678,22 @@ def logout():
 @app.context_processor
 def inject_current_user():
     return {"current_user": get_current_user()}
+
+@app.before_request
+def check_session_expiration():
+    # Rutas públicas donde no aplica expiración
+    public_paths = ["/login", "/register", "/logout", "/static"]
+
+    if any(request.path.startswith(p) for p in public_paths):
+        return  # no verificar en rutas públicas
+
+    login_time = session.get("login_time")
+    if login_time:
+        elapsed = datetime.now(timezone.utc).timestamp() - login_time
+        if elapsed > 180:  # 3 minutos = 180 segundos
+            session.clear()
+            return redirect(url_for("login"))
+    # si no hay login_time, asumimos no hay sesión
 
 
 if __name__ == "__main__":
