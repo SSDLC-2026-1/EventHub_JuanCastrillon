@@ -19,7 +19,6 @@
   },
   {
     "id": 3,
-<<<<<<< HEAD
     "full_name": "Kevin Cruz",
     "email": "kevin.cruz@prueba.com",
     "phone": "3333333333",
@@ -31,13 +30,6 @@
     },
     "role": "user",
     "status": "active"
-=======
-    "full_name": "JuannnnnAAAAAAAAAA",
-    "email": "juan.castrillon@urosario.edu.co",
-    "phone": "3112691163",
-    "password": "qwe",
-    "role": "user",
-    "status": "active"
   },
   {
     "id": 4,
@@ -47,6 +39,5 @@
     "password": "Seguridad3.!",
     "role": "admin",
     "status": "active"
->>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
   }
 ]
