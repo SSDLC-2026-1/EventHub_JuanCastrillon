@@ -14,6 +14,8 @@ from validation import validate_name,validate_email,validate_mobile_number,valid
 
 import time
 
+from encryption import hash_password, verify_password
+
 MAX_ATTEMPTS = 2
 LOCK_TIME = 5 * 60 #Bloqueo de 5 minutos
 
@@ -327,7 +329,8 @@ def login():
         ), 403
      
     user = find_user_by_email(email_norm)
-    if not user or user.get("password") != password:
+
+    if not user or not verify_password(password, user.get("password")):
         register_failed_attempt(email_norm)
         return render_template(
             "login.html",
@@ -420,12 +423,18 @@ def register():
     users = load_users()
     next_id = (max([u.get("id", 0) for u in users], default=0) + 1)
 
+    password_data = hash_password(password)
     users.append({
         "id": next_id,
         "full_name": full_name,
         "email": email,
+<<<<<<< HEAD
+        "phone": phone,
+        "password": password_data,
+=======
         "phone": phone_data, 
         "password": password, 
+>>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
         "role": "user",          
         "status": "active",
     })
@@ -483,6 +492,8 @@ def checkout(event_id: int):
         billing_email=billing_email
     )
 
+<<<<<<< HEAD
+=======
     e_cifrado, e_nonce, e_tag = encrypt_aes(billing_email, LLAVE_GLOBAL)
     email_data_cifrada = {
         "encrypted_data": e_cifrado,
@@ -497,16 +508,31 @@ def checkout(event_id: int):
         "card": clean.get("card", "")        
     }
 
+>>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
     if errors:
         return render_template(
             "checkout.html",
             event=event, qty=qty, subtotal=subtotal,
             service_fee=service_fee, total=total,
-            errors=errors, form_data=form_data
+            errors=errors, form_data=clean
         ), 400
 
+<<<<<<< HEAD
+    card_clean = clean.get("card", "")
+    last4 = card_clean[-4:] if len(card_clean) >= 4 else ""
+    masked_card = f"**** **** **** {last4}"
+
+    form_data = {
+    "exp_date": clean.get("exp_date", ""),
+    "name_on_card": clean.get("name_on_card", ""),
+    "billing_email": clean.get("billing_email", ""),
+    "card": masked_card   
+    }
+
+=======
     
     clean.get("card"," ")
+>>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
     orders = load_orders()
     order_id = next_order_id(orders)
 
