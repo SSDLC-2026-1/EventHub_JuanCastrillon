@@ -428,13 +428,8 @@ def register():
         "id": next_id,
         "full_name": full_name,
         "email": email,
-<<<<<<< HEAD
-        "phone": phone,
-        "password": password_data,
-=======
         "phone": phone_data, 
-        "password": password, 
->>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
+        "password": password_data,
         "role": "user",          
         "status": "active",
     })
@@ -491,24 +486,6 @@ def checkout(event_id: int):
         name_on_card=name_on_card,
         billing_email=billing_email
     )
-
-<<<<<<< HEAD
-=======
-    e_cifrado, e_nonce, e_tag = encrypt_aes(billing_email, LLAVE_GLOBAL)
-    email_data_cifrada = {
-        "encrypted_data": e_cifrado,
-        "nonce": e_nonce,
-        "tag": e_tag
-    }
-
-    form_data = {
-        "exp_date": clean.get("exp_date", ""),
-        "name_on_card": clean.get("name_on_card", ""),
-        "billing_email": email_data_cifrada, 
-        "card": clean.get("card", "")        
-    }
-
->>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
     if errors:
         return render_template(
             "checkout.html",
@@ -516,8 +493,6 @@ def checkout(event_id: int):
             service_fee=service_fee, total=total,
             errors=errors, form_data=clean
         ), 400
-
-<<<<<<< HEAD
     card_clean = clean.get("card", "")
     last4 = card_clean[-4:] if len(card_clean) >= 4 else ""
     masked_card = f"**** **** **** {last4}"
@@ -528,16 +503,9 @@ def checkout(event_id: int):
     "billing_email": clean.get("billing_email", ""),
     "card": masked_card   
     }
-
-=======
     
-    clean.get("card"," ")
->>>>>>> b86258d7343a4c1b85a1ba52c0bae058fa603dad
     orders = load_orders()
     order_id = next_order_id(orders)
-
-    masked_card = "**** **** **** " + clean.get("card", "")[-4:] # Ultimos 4 numeros
-    clean = {} # Limpiar datos sensibles de la tarjeta
 
     orders.append({
         "id": order_id,
@@ -549,8 +517,8 @@ def checkout(event_id: int):
         "service_fee": service_fee,
         "total": total,
         "status": "PAID",
-        "created_at": datetime.now(timezone.utc).timestamp().isoformat(),
-        "card_last_four": masked_card
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "payment": form_data
     })
 
     save_orders(orders)
