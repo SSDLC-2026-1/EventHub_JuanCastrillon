@@ -30,14 +30,14 @@ jobs:
 
       - name: Check required file exists
         run: |
-            test -f src/app.py
-            test -f src/requirements.txt
-            test -d src/templates/
-            test -d src/static/
-            test -d src/data/
+            test -f app.py
+            test -f requirements.txt
+            test -d templates/
+            test -d static/
+            test -d data/
 
       - name: Validate JSON
         run: |
-            python -m json.tool src/data/users.json
-            python -m json.tool src/data/events.json
-            python -m json.tool src/data/orders.json
+            python -m json.tool data/users.json
+            python -m json.tool data/events.json
+            python -m json.tool data/orders.json
