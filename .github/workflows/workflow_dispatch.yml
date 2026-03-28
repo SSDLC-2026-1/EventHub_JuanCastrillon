@@ -1,0 +1,50 @@
+name: Package Modules
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Selecciona el módulo a empaquetar"
+        required: true
+        type: choice
+        options:
+          - frontend
+          - backend
+          - data
+          - full
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create package directory
+        run: mkdir package
+
+      - name: Package selected module
+        run: |
+          if [ "${{ github.event.inputs.module }}" = "frontend" ]; then
+            cp -r templates static package/
+          
+          elif [ "${{ github.event.inputs.module }}" = "backend" ]; then
+            cp app.py requirements.txt package/
+          
+          elif [ "${{ github.event.inputs.module }}" = "data" ]; then
+            cp -r data package/
+          
+          elif [ "${{ github.event.inputs.module }}" = "full" ]; then
+            cp -r . package/
+          fi
+
+      - name: Compress package
+        run: |
+          zip -r package.zip package/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ github.event.inputs.module }}
+          path: package.zip
